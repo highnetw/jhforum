@@ -1,65 +1,150 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
+  const router = useRouter()
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState(false)
+  const [shake, setShake] = useState(false)
+
+  function handlePinInput(num: string) {
+    if (pin.length >= 4) return
+    const newPin = pin + num
+    setPin(newPin)
+    setError(false)
+
+    if (newPin.length === 4) {
+      if (newPin === '9999') {
+        router.push('/home')
+      } else {
+        setShake(true)
+        setError(true)
+        setTimeout(() => {
+          setPin('')
+          setShake(false)
+        }, 600)
+      }
+    }
+  }
+
+  function handleDelete() {
+    setPin(prev => prev.slice(0, -1))
+    setError(false)
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen relative overflow-hidden bg-indigo-900 flex flex-col items-center justify-center">
+
+      {/* 무빙 백그라운드 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <style>{`
+          @keyframes moveDiagonal {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(200px, 200px); }
+          }
+          .moving-bg {
+            animation: moveDiagonal 6s linear infinite;
+          }
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+          }
+          .shake {
+            animation: shake 0.5s ease-in-out;
+          }
+        `}</style>
+        <div className="moving-bg" style={{
+          position: 'absolute',
+          top: '-200px',
+          left: '-200px',
+          width: 'calc(100% + 400px)',
+          height: 'calc(100% + 400px)',
+          backgroundImage: 'url(/mark.png)',
+          backgroundRepeat: 'repeat',
+          backgroundSize: '200px 67px',
+          opacity: 0.15,
+        }} />
+      </div>
+
+      {/* 로고 */}
+      <div className="relative z-10 text-center mb-10">
+        <div className="flex justify-center mb-4">
+          <img src="/icon-192x192.png" style={{width: '150px', height: '96px'}} className="rounded-3xl shadow-2xl" />
+
+        </div>
+        <h1 className="text-3xl font-bold text-white">JH Forum</h1>
+        <p className="text-indigo-300 mt-2 text-lg font-medium">우리들의 소중한 모임 기록</p>
+
+        <p className="text-indigo-400 mt-1 text-sm">Since 30+ Years</p>
+      </div>
+
+      {/* PIN 입력 */}
+      <div className={`relative z-10 ${shake ? 'shake' : ''}`}>
+
+        {/* 점 표시 */}
+        <div className="flex justify-center gap-4 mb-6">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+              i < pin.length
+                ? error ? 'bg-red-400 border-red-400' : 'bg-white border-white'
+                : 'bg-transparent border-white/40'
+            }`} />
+          ))}
+        </div>
+
+        {error && (
+          <p className="text-red-400 text-sm text-center mb-4">비밀번호가 틀렸어요</p>
+        )}
+
+        {/* 숫자 키패드 */}
+        <div className="grid grid-cols-3 gap-3 w-72">
+          {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                if (key === '⌫') handleDelete()
+                else if (key !== '') handlePinInput(key)
+              }}
+              className={`h-16 rounded-2xl text-xl font-semibold transition-all duration-150 ${
+                key === ''
+                  ? 'invisible'
+                  : key === '⌫'
+                  ? 'bg-white/10 text-white hover:bg-white/20 active:scale-95'
+                  : 'bg-white/10 text-white hover:bg-white/20 active:scale-95 active:bg-white/30'
+              }`}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
+        {/* 숨겨진 input - 모바일 숫자 키보드용 */}
+        <input
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={pin}
+          onChange={e => {
+            const val = e.target.value.replace(/\D/g, '').slice(0, 4)
+            setPin(val)
+            if (val.length === 4) {
+              if (val === '9999') {
+                router.push('/home')
+              } else {
+                setShake(true)
+                setError(true)
+                setTimeout(() => { setPin(''); setShake(false) }, 600)
+              }
+            }
+          }}
+          className="opacity-0 absolute w-0 h-0"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      </div>
+    </main>
+  )
 }
